@@ -150,8 +150,7 @@ def priority_queue_update_job(
 
     item: QueueItem = db.get_filtered_items(uid=uid)[0]
     item.update(name, priority, cancel, payload)
-    db.update([item])
-    db.write()
+    db.update([item], force_write=True)
 
 
 def pretty_print_queue(queue: List[QueueItem]) -> str:

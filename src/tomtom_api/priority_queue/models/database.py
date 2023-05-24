@@ -40,6 +40,15 @@ class PriorityQueueDB(metaclass=SingletonMeta):
         self.df = None
         self.read()
 
+    def _force_col_types(self) -> None:
+        for time_col in ['created_timestamp',
+                         'updated_timestamp',
+                         'submitted_timestamp',
+                         'completed_timestamp',
+                         'cancelled_timestamp',
+                         'error_timestamp']:
+            self.df[time_col] = pd.to_datetime(self.df[time_col])
+
     def read(self) -> None:
         """Read the file and store the content in the dataframe attribute.
         """
@@ -47,6 +56,7 @@ class PriorityQueueDB(metaclass=SingletonMeta):
             self.df = pd.DataFrame(columns=self.columns)
         else:
             self.df = pd.read_parquet(self.file)
+        self._force_col_types()
 
     def write(self) -> None:
         """Write the content of the dataframe into the file.
@@ -74,6 +84,7 @@ class PriorityQueueDB(metaclass=SingletonMeta):
         data = {k: item.__dict__[k] for k in self.columns}
         data['report_type'] = item.payload.__class__.__name__
         self.df = pd.concat([self.df, pd.DataFrame([data])])
+        self._force_col_types()
 
     def get_next(self, n: int = 1) -> List[QueueItem]:
         """Get the list of the next element(s)
@@ -225,3 +236,4 @@ class PriorityQueueDB(metaclass=SingletonMeta):
         """Empty the database
         """
         self.df = pd.DataFrame(columns=self.columns)
+        self._force_col_types()
