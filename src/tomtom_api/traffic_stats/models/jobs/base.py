@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, List, Literal, Optional
 
-from tomtom_api.traffic_stats import MAX_DATE_RANGE_COUNT, MAX_TIME_SETS_COUNT
+from tomtom_api.traffic_stats import MAX_TIME_SETS_COUNT
 from tomtom_api.traffic_stats.models.time import TomtomDateRange, TomtomTimeSet
 
 

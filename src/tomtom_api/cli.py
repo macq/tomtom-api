@@ -43,7 +43,7 @@ def client():
 @click.option('-t', '--job-type', type=click.Choice(['routeanalysis', 'areaanalysis', 'trafficdensity']), multiple=True,
               help="The type of jobs.")
 @click.option('-s', '--state', type=click.Choice([n.name for n in TomtomJobState]), multiple=True,
-              help=f"The current state of jobs.")
+              help="The current state of jobs.")
 def list_all_job_info(
     base_url: Optional[str] = None,
     version: Optional[int] = None,

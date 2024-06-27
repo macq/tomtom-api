@@ -3,7 +3,6 @@ from typing import List, Optional, Union
 
 import click
 
-from tomtom_api import config
 from tomtom_api.priority_queue.lib import (pretty_print_queue,
                                            priority_queue_add_job,
                                            priority_queue_clean_folder,
@@ -12,7 +11,6 @@ from tomtom_api.priority_queue.lib import (pretty_print_queue,
                                            priority_queue_update_job)
 from tomtom_api.priority_queue.models.daemon import PriorityQueueDaemon
 from tomtom_api.priority_queue.models.database import PriorityQueueDB
-from tomtom_api.priority_queue.models.queue import QueueItem
 from tomtom_api.priority_queue.models.status import QueueItemStatus
 from tomtom_api.traffic_stats.models.jobs.route import TomtomRouteJob
 

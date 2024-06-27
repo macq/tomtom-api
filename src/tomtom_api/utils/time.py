@@ -66,7 +66,7 @@ def dow(days: List[str]) -> List[str]:
     all_dow = {d.upper() for d in calendar.day_abbr}
     days = [d.upper() for d in days]
     if not all([d in all_dow for d in days]):
-        raise ValueError(f'At least one of the input in `days` is not a 3 first letters day word.')
+        raise ValueError('At least one of the input in `days` is not a 3 first letters day word.')
     return days
 
 

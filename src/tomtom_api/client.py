@@ -1,24 +1,32 @@
 import datetime as dt
+from shapely import geometry as geo
 import json
 from typing import List, Literal, Optional, Union
 
 import requests
 from dataclass_wizard.errors import MissingFields
+import geojson
 
 from tomtom_api import config, log
-from tomtom_api.traffic_stats.models.geospatial import (TomtomNetwork,
-                                                        TomtomRoad)
+from tomtom_api.traffic_stats.models.geospatial import TomtomNetwork, TomtomRoad
 from tomtom_api.traffic_stats.models.jobs.area import TomtomAreaJob
 from tomtom_api.traffic_stats.models.jobs.route import TomtomRouteJob
 from tomtom_api.traffic_stats.models.responses import (
-    JsonIpResponse, TomtomErrorResponse, TomtomJobInfo, TomtomResponseAnalysis,
-    TomtomResponseRouteFound, TomtomResponseSearchJobs, TomtomResponseStatus)
-from tomtom_api.traffic_stats.models.status import (TomtomJobState,
-                                                    TomtomReportType)
+    JsonIpResponse,
+    TomtomErrorResponse,
+    TomtomJobInfo,
+    TomtomResponseAnalysis,
+    TomtomResponseRouteFound,
+    TomtomResponseSearchJobs,
+    TomtomResponseStatus,
+)
+from tomtom_api.traffic_stats.models.status import TomtomJobState, TomtomReportType
 from tomtom_api.traffic_stats.models.time import TomtomDateRange, TomtomTimeSet
 from tomtom_api.utils.time import date_as_str
 
-SubmittedTomtomJob = Union[int, TomtomResponseAnalysis, TomtomResponseStatus, TomtomJobInfo]
+SubmittedTomtomJob = Union[
+    int, TomtomResponseAnalysis, TomtomResponseStatus, TomtomJobInfo
+]
 
 
 class TomtomClient:
@@ -35,7 +43,7 @@ class TomtomClient:
         proxy_ip: Optional[str] = None,
         proxy_port: Optional[int] = None,
         proxy_username: Optional[str] = None,
-        proxy_password: Optional[str] = None
+        proxy_password: Optional[str] = None,
     ):
         self.key: str = key or config.api.key
         self.version: int = version or config.api.version
@@ -47,25 +55,35 @@ class TomtomClient:
         proxy_username = proxy_username or config.api.proxy.username
         proxy_password = proxy_password or config.api.proxy.password
 
-        tab = [proxy_ip is None, proxy_port is None, proxy_username is None, proxy_password is None]
+        tab = [
+            proxy_ip is None,
+            proxy_port is None,
+            proxy_username is None,
+            proxy_password is None,
+        ]
         if not all([v == tab[0] for v in tab[1:]]):
-            raise ValueError('Some of the proxy information were given, but not all of them.\n'
-                             'Please check that you are defining all the proxy related variables.')
+            raise ValueError(
+                "Some of the proxy information were given, but not all of them.\n"
+                "Please check that you are defining all the proxy related variables."
+            )
 
-        self.proxy_url: Optional[str] = None if proxy_ip is None \
+        self.proxy_url: Optional[str] = (
+            None
+            if proxy_ip is None
             else f"http://{proxy_username}:{proxy_password}@{proxy_ip}:{proxy_port}"
+        )
 
         if self.key is None:
-            raise ValueError('The client cannot be initialized without an API key.')
+            raise ValueError("The client cannot be initialized without an API key.")
         if self.version is None:
-            raise ValueError('The client cannot be initialized without a version.')
+            raise ValueError("The client cannot be initialized without a version.")
         if self.base_url is None:
-            raise ValueError('The client cannot be initialized without a base url.')
+            raise ValueError("The client cannot be initialized without a base url.")
 
     def __del__(self):
         try:
             self.session.close()
-        except:
+        except Exception:
             pass
 
     def request(self, *args, **kwargs) -> requests.Response:
@@ -82,22 +100,32 @@ class TomtomClient:
         Exception
             If the user was not allowed to perform the query (403 Forbidden)
         """
-        proxies = None if self.proxy_url is None else {protocol: self.proxy_url for protocol in ['http', 'https']}
-        headers = {'content-type': 'application/json'}
-        r = self.session.request(*args, proxies=proxies, headers=headers, allow_redirects=True, **kwargs)
-        log.debug(f'request: {r.text}')
+        proxies = (
+            None
+            if self.proxy_url is None
+            else {protocol: self.proxy_url for protocol in ["http", "https"]}
+        )
+        headers = {"content-type": "application/json"}
+        r = self.session.request(
+            *args, proxies=proxies, headers=headers, allow_redirects=True, **kwargs
+        )
+        log.debug(f"request: {r.text}")
 
         if r.status_code == 403:
             log.error(r.text)
             # todo: create custom exception for forbidden
-            raise Exception('The access is forbidden. Maybe you should check if the correct API key is loaded.')
+            raise Exception(
+                "The access is forbidden. Maybe you should check if the correct API key is loaded."
+            )
 
         if r.status_code == 400:
             try:
                 error = TomtomErrorResponse.from_dict(r.json())
                 for message in error.messages:
-                    log.error(f"{message.error} ({message.field}):\n{message.rejected_value}")
-            except MissingFields as e:
+                    log.error(
+                        f"{message.error} ({message.field}):\n{message.rejected_value}"
+                    )
+            except MissingFields:
                 error = TomtomResponseAnalysis.from_dict(r.json())
                 for message in error.messages:
                     log.error(f"Job {error.job_id}: {message}")
@@ -105,20 +133,22 @@ class TomtomClient:
                 # we can just return the original request.response
                 return r
 
-            raise Exception(f'The given request generated an error (HTTP400). Please check logs for more info.')
+            raise Exception(
+                "The given request generated an error (HTTP400). Please check logs for more info."
+            )
 
         return r
 
     def route_analysis(
         self,
         job_name: str,
-        distance_unit: Literal['KILOMETERS', 'MILES'],
+        distance_unit: Literal["KILOMETERS", "MILES"],
         roads: List[TomtomRoad],
         date_ranges: List[TomtomDateRange],
         time_sets: List[TomtomTimeSet],
-        accept_mode: Optional[Literal['AUTO', 'MANUAL']] = 'AUTO',
-        map_version: Optional[float] = 2016.12,
-        average_sample_size_threshold: Optional[int] = None
+        accept_mode: Optional[Literal["AUTO", "MANUAL"]] = "AUTO",
+        map_version: Optional[float] = 2023.03,
+        average_sample_size_threshold: Optional[int] = None,
     ) -> TomtomResponseAnalysis:
         """
         The Traffic Stats API Route Analysis service calculates the statistics for a defined route between an origin
@@ -126,26 +156,28 @@ class TomtomClient:
 
         Documentation: https://developer.tomtom.com/traffic-stats/documentation/api/route-analysis
         """
-        job = TomtomRouteJob(job_name=job_name,
-                             distance_unit=distance_unit,
-                             routes=roads,
-                             date_ranges=date_ranges,
-                             time_sets=time_sets,
-                             accept_mode=accept_mode,
-                             map_version=map_version,
-                             average_sample_size_threshold=average_sample_size_threshold)
+        job = TomtomRouteJob(
+            job_name=job_name,
+            distance_unit=distance_unit,
+            routes=roads,
+            date_ranges=date_ranges,
+            time_sets=time_sets,
+            accept_mode=accept_mode,
+            map_version=map_version,
+            average_sample_size_threshold=average_sample_size_threshold,
+        )
         return self.post_job_route_analysis(job)
 
     def area_analysis(
         self,
         job_name: str,
-        distance_unit: Literal['KILOMETERS', 'MILES'],
+        distance_unit: Literal["KILOMETERS", "MILES"],
         network: TomtomNetwork,
         date_range: TomtomDateRange,
         time_sets: List[TomtomTimeSet],
-        accept_mode: Optional[Literal['AUTO', 'MANUAL']] = 'AUTO',
+        accept_mode: Optional[Literal["AUTO", "MANUAL"]] = "AUTO",
         map_version: Optional[float] = 2023.03,
-        average_sample_size_threshold: Optional[int] = None
+        average_sample_size_threshold: Optional[int] = None,
     ) -> TomtomResponseAnalysis:
         job = TomtomAreaJob(
             job_name=job_name,
@@ -155,15 +187,15 @@ class TomtomClient:
             time_sets=time_sets,
             accept_mode=accept_mode,
             map_version=map_version,
-            average_sample_size_threshold=average_sample_size_threshold
+            average_sample_size_threshold=average_sample_size_threshold,
         )
         return self.post_job_area_analysis(job)
 
     def find_route(
         self,
         road: TomtomRoad,
-        map_version: Optional[str] = '2016.12',
-        map_type: Optional[str] = 'DSEG_NOSPLIT'
+        map_version: Optional[str] = "2016.12",
+        map_type: Optional[str] = "DSEG_NOSPLIT",
     ) -> TomtomResponseRouteFound:
         """
         This API performs a check to see whether the road can be found with the given informations.
@@ -182,30 +214,27 @@ class TomtomClient:
         TomtomResponseRouteFound
             The response of the API.
         """
-        url = f'https://{self.base_url}/traffic/trafficstats/route?key={self.key}'
+        url = f"https://{self.base_url}/traffic/trafficstats/route?key={self.key}"
         data = road.to_find_route_api_object(map_version, map_type)
-        response = self.request('post', url, data=json.dumps(data))
+        response = self.request("post", url, data=json.dumps(data))
         tomtom_response = TomtomResponseRouteFound.from_dict(response.json())
         return tomtom_response
 
     def post_job_route_analysis(self, job: TomtomRouteJob) -> TomtomResponseAnalysis:
-        url = f'https://{self.base_url}/traffic/trafficstats/routeanalysis/{self.version}?key={self.key}'
+        url = f"https://{self.base_url}/traffic/trafficstats/routeanalysis/{self.version}?key={self.key}"
 
-        request_response = self.request('post', url, data=json.dumps(job.to_dict()))
+        request_response = self.request("post", url, data=json.dumps(job.to_dict()))
         tomtom_response = TomtomResponseAnalysis.from_dict(request_response.json())
         return tomtom_response
 
     def post_job_area_analysis(self, job: TomtomAreaJob) -> TomtomResponseAnalysis:
-        url = f'https://{self.base_url}/traffic/trafficstats/areaanalysis/{self.version}?key={self.key}'
+        url = f"https://{self.base_url}/traffic/trafficstats/areaanalysis/{self.version}?key={self.key}"
 
-        request_response = self.request('post', url, data=json.dumps(job.to_dict()))
+        request_response = self.request("post", url, data=json.dumps(job.to_dict()))
         tomtom_response = TomtomResponseAnalysis.from_dict(request_response.json())
         return tomtom_response
 
-    def status(
-        self,
-        job_id: int
-    ) -> TomtomResponseStatus:
+    def status(self, job_id: int) -> TomtomResponseStatus:
         """When a job has been initiated via the API request it is possible to check the status.
 
         Documentation:
@@ -223,11 +252,39 @@ class TomtomClient:
         TomtomResponseStatus
             The requested information.
         """
-        url = f'https://{self.base_url}/traffic/trafficstats/status/{self.version}/{job_id}?key={self.key}'
+        url = f"https://{self.base_url}/traffic/trafficstats/status/{self.version}/{job_id}?key={self.key}"
 
-        request_response = self.request('get', url)
+        request_response = self.request("get", url)
         tomtom_response = TomtomResponseStatus.from_dict(request_response.json())
         return tomtom_response
+
+    def available_maps(
+        self,
+        geometry: Union[geo.Polygon, geo.MultiPolygon],
+        start: dt.date,
+        end: dt.date,
+    ) -> List[str]:
+
+        url = f"https://{self.base_url}/traffic/trafficstats/maps/{self.version}?key={self.key}"
+        day_format = "%Y-%m-%d"
+        data = {
+            "geometry": geojson.Feature(geometry=geometry, properties={}).geometry,
+            "dateRange": {
+                "from": start.strftime(day_format),
+                "to": end.strftime(day_format),
+            },
+        }
+        request_response = self.request(
+            "post",
+            url,
+            data=json.dumps(data),
+        )
+
+        if request_response.status_code == 400:
+            messages = request_response.json()["messages"]
+            message = "\n".join(messages)
+            raise Exception(message)
+        return request_response.json()["maps"]
 
     def search_jobs(
         self,
@@ -240,7 +297,7 @@ class TomtomClient:
         name: Optional[str] = None,
         job_id: Optional[int] = None,
         job_type: Optional[Union[TomtomReportType, List[TomtomReportType]]] = None,
-        state: Optional[Union[TomtomJobState, List[TomtomJobState]]] = None
+        state: Optional[Union[TomtomJobState, List[TomtomJobState]]] = None,
     ) -> TomtomResponseSearchJobs:
         """Fetch information about the jobs you have.
         You can either get them all or use some filters.
@@ -275,15 +332,17 @@ class TomtomClient:
         TomtomResponseSearchJob
             The response provided by the tomtom API
         """
-        url = f'https://{self.base_url}/traffic/trafficstats/job/search/{self.version}?key={self.key}'
+        url = f"https://{self.base_url}/traffic/trafficstats/job/search/{self.version}?key={self.key}"
 
         if page_index is not None and page_index < 0:
-            raise ValueError(f'page_index must be greater or equal to zero ({page_index} given)')
+            raise ValueError(
+                f"page_index must be greater or equal to zero ({page_index} given)"
+            )
 
         if per_page is not None and per_page <= 0:
-            raise ValueError(f'per_page must be greater than zero ({per_page} given)')
+            raise ValueError(f"per_page must be greater than zero ({per_page} given)")
 
-        date_fmt = '%Y-%m-%d'
+        date_fmt = "%Y-%m-%d"
 
         # expand parameters that can be lists
         job_type = job_type if isinstance(job_type, list) else [job_type]
@@ -292,20 +351,36 @@ class TomtomClient:
         state = [s for s in state if s is not None]
 
         params = {
-            'pageIndex': page_index,
-            'perPage': per_page,
-            'createdAfter': None if created_after is None else date_as_str(created_after, date_fmt),
-            'createdBefore': None if created_before is None else date_as_str(created_before, date_fmt),
-            'completedAfter': None if completed_after is None else date_as_str(completed_after, date_fmt),
-            'completedBefore': None if completed_before is None else date_as_str(completed_before, date_fmt),
-            'name': name,
-            'id': job_id,
-            'type': None if len(job_type) < 1 else ','.join([j.value for j in job_type]),
-            'state': None if len(state) < 1 else ','.join([s.name for s in state])
+            "pageIndex": page_index,
+            "perPage": per_page,
+            "createdAfter": (
+                None if created_after is None else date_as_str(created_after, date_fmt)
+            ),
+            "createdBefore": (
+                None
+                if created_before is None
+                else date_as_str(created_before, date_fmt)
+            ),
+            "completedAfter": (
+                None
+                if completed_after is None
+                else date_as_str(completed_after, date_fmt)
+            ),
+            "completedBefore": (
+                None
+                if completed_before is None
+                else date_as_str(completed_before, date_fmt)
+            ),
+            "name": name,
+            "id": job_id,
+            "type": (
+                None if len(job_type) < 1 else ",".join([j.value for j in job_type])
+            ),
+            "state": None if len(state) < 1 else ",".join([s.name for s in state]),
         }
         params = {k: v for k, v in params.items() if v is not None}
 
-        request_response = self.request('get', url, params=params)
+        request_response = self.request("get", url, params=params)
         return TomtomResponseSearchJobs.from_dict(request_response.json())
 
     def delete_job(self, job: Union[SubmittedTomtomJob, List[SubmittedTomtomJob]]):
@@ -314,9 +389,9 @@ class TomtomClient:
 
         job_id = job if isinstance(job, int) else job.job_id
 
-        url = f'https://{self.base_url}/traffic/trafficstats/reports/{job_id}/?key={self.key}'
+        url = f"https://{self.base_url}/traffic/trafficstats/reports/{job_id}/?key={self.key}"
 
-        response = self.request('delete', url)
+        response = self.request("delete", url)
 
         return response
 
@@ -327,13 +402,15 @@ class TomtomClient:
         job_id = job if isinstance(job, int) else job.job_id
 
         url = f"https://{self.base_url}/traffic/trafficstats/status/{self.version}/{job_id}/cancel?key={self.key}"
-        response = self.request('post', url)
+        response = self.request("post", url)
         return response
 
     def check_ip(self, use_proxy: bool = False) -> JsonIpResponse:
         if use_proxy and self.proxy_url is None:
-            raise Exception('Trying to use a proxy while it is not configured.\n'
-                            'Try to setup the client with proxy values or look at your environment variables')
+            raise Exception(
+                "Trying to use a proxy while it is not configured.\n"
+                "Try to setup the client with proxy values or look at your environment variables"
+            )
 
         url = "https://jsonip.com/"
 
@@ -343,7 +420,7 @@ class TomtomClient:
             self.proxy_url = None
 
         # perform the query
-        response = self.request('get', url)
+        response = self.request("get", url)
 
         # do not forget to reset the self.proxy_url
         self.proxy_url = tmp_proxy
@@ -357,43 +434,44 @@ class DummyTomtomClient(TomtomClient):
         super().__init__(**kwargs)
 
     def request(self, *args, **kwargs):
-        raise Exception('This client is not meant to send requests.')
+        raise Exception("This client is not meant to send requests.")
 
     def route_analysis(self, *args, **kwargs) -> TomtomResponseAnalysis:
-        return TomtomResponseAnalysis('OK', ['This is a dummy response'], -1)
+        return TomtomResponseAnalysis("OK", ["This is a dummy response"], -1)
 
     def post_job_route_analysis(self, *args, **kwargs) -> TomtomResponseAnalysis:
-        return TomtomResponseAnalysis(response_status='OK',
-                                      messages=['This is a dummy response'],
-                                      job_id=1)
+        return TomtomResponseAnalysis(
+            response_status="OK", messages=["This is a dummy response"], job_id=1
+        )
 
     def post_job_area_analysis(self, *args, **kwargs) -> TomtomResponseAnalysis:
-        return TomtomResponseAnalysis(response_status='OK',
-                                      messages=['This is a dummy response'],
-                                      job_id=1)
+        return TomtomResponseAnalysis(
+            response_status="OK", messages=["This is a dummy response"], job_id=1
+        )
 
     def status(self, *args, **kwargs) -> TomtomResponseStatus:
-        return TomtomResponseStatus(-1, TomtomJobState.DONE, 'OK', ['https://google.be'])
+        return TomtomResponseStatus(
+            -1, TomtomJobState.DONE, "OK", ["https://google.be"]
+        )
 
     def search_jobs(self, *args, **kwargs) -> TomtomResponseSearchJobs:
-        from tomtom_api.traffic_stats.models.responses import (Pageable, Sort,
-                                                               TomtomJobInfo)
+        from tomtom_api.traffic_stats.models.responses import (
+            Pageable,
+            Sort,
+            TomtomJobInfo,
+        )
+
         job_info = TomtomJobInfo(
-            name='dummy job',
+            name="dummy job",
             created_at=dt.datetime.now(),
             state=TomtomJobState.DONE,
             job_id=1,
             completed_at=dt.datetime.now(),
-            job_type='dummy'
+            job_type="dummy",
         )
         sort = Sort(is_sorted=True, is_unsorted=False, is_empty=False)
         pageable = Pageable(
-            sort=sort,
-            page_size=1,
-            page_number=1,
-            offset=1,
-            paged=True,
-            unpaged=False
+            sort=sort, page_size=1, page_number=1, offset=1, paged=True, unpaged=False
         )
         return TomtomResponseSearchJobs(
             content=[job_info],
@@ -406,8 +484,8 @@ class DummyTomtomClient(TomtomClient):
             number_of_elements=1,
             size=1,
             number=1,
-            empty=False
+            empty=False,
         )
 
     def check_ip(self, *args, **kwargs) -> JsonIpResponse:
-        raise Exception('This client is not meant to send requests.')
+        raise Exception("This client is not meant to send requests.")

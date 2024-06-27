@@ -9,8 +9,7 @@ from tomtom_api.priority_queue.models.database import PriorityQueueDB
 from tomtom_api.priority_queue.models.queue import QueueItem
 from tomtom_api.priority_queue.models.status import QueueItemStatus
 from tomtom_api.traffic_stats import N_CONCURRENT_JOB_IN_PROGRESS
-from tomtom_api.traffic_stats.models.status import (TomtomJobState,
-                                                    TomtomReportType)
+from tomtom_api.traffic_stats.models.status import (TomtomJobState)
 from tomtom_api.utils.daemon import Daemon
 
 DAEMON_LOG_FILE = config.path.home / 'daemon.log'

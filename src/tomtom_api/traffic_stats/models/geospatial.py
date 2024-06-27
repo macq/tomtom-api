@@ -182,7 +182,7 @@ class TomtomRoad:
             raise TooManyViaPointsException(f'The TomtomRoad {self.name} has too many via points.')
 
         if self.length() > MAX_ROAD_LENGTH:
-            raise RoadTooLongException(f'The road length is greater than the maximum allowed.')
+            raise RoadTooLongException('The road length is greater than the maximum allowed.')
 
     @classmethod
     def from_dict(cls, dict_object: Dict[str, Any], ignore_consecutive_points: bool = False) -> TomtomRoad:
@@ -316,7 +316,7 @@ class TomtomNetwork:
         self.geometry = geometry
 
         if self.area() > MAX_ROAD_LENGTH:
-            raise RoadTooLongException(f'The road length is greater than the maximum allowed.')
+            raise RoadTooLongException('The road length is greater than the maximum allowed.')
 
     @classmethod
     def from_dict(cls, dict_object: Dict[str, Any]) -> TomtomNetwork:

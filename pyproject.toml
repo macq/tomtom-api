@@ -13,22 +13,22 @@ dependencies = [
   'pandas',
   'pyarrow',
   'tabulate',
-  'geojson'
+  'geojson',
 ]
 description = "API client allowing to interact with the tomtom REST services."
 maintainers = [
-  { name = "Guillaume Latour", email = "guillaume.latour@macq.eu" }
+  { name = "Guillaume Latour", email = "guillaume.latour@macq.eu" },
 ]
 name = "tomtom_api"
 readme = "readme.md"
 requires-python = ">=3.8"
-version = "2023.5.24"
+version = "2024.6.27"
 
 [project.urls]
 repository = "https://stash.macq.eu/projects/RDDS/repos/tomtom-api"
 
 [project.optional-dependencies]
-dev = ['autopep8', 'pytest', 'pdoc']
+dev = ['ruff', 'pytest']
 pyproj = ['pyproj']
 
 [project.scripts]

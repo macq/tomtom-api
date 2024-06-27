@@ -149,7 +149,7 @@ class PriorityQueueDB(metaclass=SingletonMeta):
         uid, name, priority, status = uid or [], name or [], priority or [], status or []
 
         # uid filter
-        uid_filter_str = '' if len(uid) < 1 else f'(uid in @uid)'
+        uid_filter_str = '' if len(uid) < 1 else '(uid in @uid)'
 
         # name filter
         name_filters = [f'name.str.contains("{n}")' for n in name]

@@ -64,7 +64,7 @@ class TomtomDateRange:
         if e < s:
             raise ValueError(f'The start date ({self.start}) is after the end date ({self.end})')
         if (e - s).days > MAX_DATE_RANGE_LENGTH:
-            raise ValueError(f'The given date range is greater than the maximum allowed.')
+            raise ValueError('The given date range is greater than the maximum allowed.')
 
         self.exclusions = None if exclusions is None else [date_as_str(d, date_fmt) for d in exclusions]
         self.excluded_days_of_week = None if excluded_days_of_week is None else dow(excluded_days_of_week)
