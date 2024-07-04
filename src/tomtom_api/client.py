@@ -11,6 +11,7 @@ from tomtom_api import config, log
 from tomtom_api.traffic_stats.models.geospatial import TomtomNetwork, TomtomRoad
 from tomtom_api.traffic_stats.models.jobs.area import TomtomAreaJob
 from tomtom_api.traffic_stats.models.jobs.route import TomtomRouteJob
+from tomtom_api.traffic_stats.models.jobs.traffic_density import TomtomTrafficDensityJob
 from tomtom_api.traffic_stats.models.responses import (
     JsonIpResponse,
     TomtomErrorResponse,
@@ -147,7 +148,7 @@ class TomtomClient:
         date_ranges: List[TomtomDateRange],
         time_sets: List[TomtomTimeSet],
         accept_mode: Optional[Literal["AUTO", "MANUAL"]] = "AUTO",
-        map_version: Optional[float] = 2023.03,
+        map_version: Optional[float] = None,
         average_sample_size_threshold: Optional[int] = None,
     ) -> TomtomResponseAnalysis:
         """
@@ -176,7 +177,7 @@ class TomtomClient:
         date_range: TomtomDateRange,
         time_sets: List[TomtomTimeSet],
         accept_mode: Optional[Literal["AUTO", "MANUAL"]] = "AUTO",
-        map_version: Optional[float] = 2023.03,
+        map_version: Optional[float] = None,
         average_sample_size_threshold: Optional[int] = None,
     ) -> TomtomResponseAnalysis:
         job = TomtomAreaJob(
@@ -191,10 +192,33 @@ class TomtomClient:
         )
         return self.post_job_area_analysis(job)
 
+    def traffic_density(
+        self,
+        job_name: str,
+        distance_unit: Literal["KILOMETERS", "MILES"],
+        network: TomtomNetwork,
+        date_range: TomtomDateRange,
+        time_sets: List[TomtomTimeSet],
+        accept_mode: Optional[Literal["AUTO", "MANUAL"]] = "AUTO",
+        map_version: Optional[float] = None,
+        average_sample_size_threshold: Optional[int] = None,
+    ) -> TomtomResponseAnalysis:
+        job = TomtomTrafficDensityJob(
+            job_name=job_name,
+            distance_unit=distance_unit,
+            network=network,
+            date_range=date_range,
+            time_sets=time_sets,
+            accept_mode=accept_mode,
+            map_version=map_version,
+            average_sample_size_threshold=average_sample_size_threshold,
+        )
+        return self.post_job_traffic_density(job)
+
     def find_route(
         self,
         road: TomtomRoad,
-        map_version: Optional[str] = "2016.12",
+        map_version: Optional[str] = None,
         map_type: Optional[str] = "DSEG_NOSPLIT",
     ) -> TomtomResponseRouteFound:
         """
@@ -229,6 +253,15 @@ class TomtomClient:
 
     def post_job_area_analysis(self, job: TomtomAreaJob) -> TomtomResponseAnalysis:
         url = f"https://{self.base_url}/traffic/trafficstats/areaanalysis/{self.version}?key={self.key}"
+
+        request_response = self.request("post", url, data=json.dumps(job.to_dict()))
+        tomtom_response = TomtomResponseAnalysis.from_dict(request_response.json())
+        return tomtom_response
+
+    def post_job_traffic_density(
+        self, job: TomtomTrafficDensityJob
+    ) -> TomtomResponseAnalysis:
+        url = f"https://{self.base_url}/traffic/trafficstats/trafficdensity/{self.version}?key={self.key}"
 
         request_response = self.request("post", url, data=json.dumps(job.to_dict()))
         tomtom_response = TomtomResponseAnalysis.from_dict(request_response.json())

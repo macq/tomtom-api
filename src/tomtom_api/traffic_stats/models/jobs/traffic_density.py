@@ -7,7 +7,7 @@ from tomtom_api.traffic_stats.models.jobs.base import TomtomJob
 from tomtom_api.traffic_stats.models.time import TomtomDateRange, TomtomTimeSet
 
 
-class TomtomAreaJob(TomtomJob):
+class TomtomTrafficDensityJob(TomtomJob):
     network: TomtomNetwork
 
     def __init__(
@@ -43,7 +43,7 @@ class TomtomAreaJob(TomtomJob):
         return job_dict
 
     @classmethod
-    def from_dict(cls, dict_object: Dict[str, Any]) -> TomtomAreaJob:
+    def from_dict(cls, dict_object: Dict[str, Any]) -> TomtomTrafficDensityJob:
         return cls(
             job_name=dict_object['jobName'],
             network=TomtomNetwork.from_dict(dict_object['network']),

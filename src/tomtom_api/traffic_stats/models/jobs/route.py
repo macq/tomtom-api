@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Literal, Optional
 
-from tomtom_api.traffic_stats import (MAX_DATE_RANGE_COUNT, MAX_ROAD_COUNT)
+from tomtom_api.traffic_stats import MAX_DATE_RANGE_COUNT, MAX_ROAD_COUNT
 from tomtom_api.traffic_stats.models.geospatial import TomtomRoad
 from tomtom_api.traffic_stats.models.jobs.base import TomtomJob
 from tomtom_api.traffic_stats.models.time import TomtomDateRange, TomtomTimeSet
@@ -17,10 +17,10 @@ class TomtomRouteJob(TomtomJob):
         routes: List[TomtomRoad],
         date_ranges: List[TomtomDateRange],
         time_sets: List[TomtomTimeSet],
-        distance_unit: Literal['KILOMETERS', 'MILES'] = 'KILOMETERS',
-        accept_mode: Optional[Literal['AUTO', 'MANUAL']] = 'AUTO',
-        map_version: Optional[float] = 2020.09,
-        average_sample_size_threshold: Optional[int] = None
+        distance_unit: Literal["KILOMETERS", "MILES"] = "KILOMETERS",
+        accept_mode: Optional[Literal["AUTO", "MANUAL"]] = "AUTO",
+        map_version: Optional[float] = None,
+        average_sample_size_threshold: Optional[int] = None,
     ):
         """Data structure containing all the job information.
 
@@ -55,12 +55,14 @@ class TomtomRouteJob(TomtomJob):
         """
 
         if len(routes) > MAX_ROAD_COUNT:
-            raise ValueError(f'Impossible to query for more than {MAX_ROAD_COUNT} roads, ({len(routes)} given)')
+            raise ValueError(
+                f"Impossible to query for more than {MAX_ROAD_COUNT} roads, ({len(routes)} given)"
+            )
         self.routes = routes
 
         if len(date_ranges) > MAX_DATE_RANGE_COUNT:
             raise ValueError(
-                f'Impossible to query for more than {MAX_DATE_RANGE_COUNT} date range, ({len(date_ranges)} given)'
+                f"Impossible to query for more than {MAX_DATE_RANGE_COUNT} date range, ({len(date_ranges)} given)"
             )
         self.date_ranges = date_ranges
 
@@ -70,21 +72,26 @@ class TomtomRouteJob(TomtomJob):
             distance_unit=distance_unit,
             accept_mode=accept_mode,
             map_version=map_version,
-            average_sample_size_threshold=average_sample_size_threshold
+            average_sample_size_threshold=average_sample_size_threshold,
         )
 
     @classmethod
     def from_dict(cls, dict_object: Dict[str, Any]) -> TomtomRouteJob:
         return cls(
-            job_name=dict_object['jobName'],
-            routes=[TomtomRoad.from_dict(r) for r in dict_object['routes']],
-            date_ranges=[TomtomDateRange.from_dict(d) for d in dict_object['dateRanges']],
-            time_sets=[TomtomTimeSet.from_dict(t) for t in dict_object['timeSets']],
-            distance_unit=dict_object['distanceUnit'],
-            accept_mode=dict_object['acceptMode'],
-            map_version=dict_object['mapVersion'],
-            average_sample_size_threshold=None if 'averageSampleSizeThreshold' not in dict_object else dict_object[
-                'averageSampleSizeThreshold']
+            job_name=dict_object["jobName"],
+            routes=[TomtomRoad.from_dict(r) for r in dict_object["routes"]],
+            date_ranges=[
+                TomtomDateRange.from_dict(d) for d in dict_object["dateRanges"]
+            ],
+            time_sets=[TomtomTimeSet.from_dict(t) for t in dict_object["timeSets"]],
+            distance_unit=dict_object["distanceUnit"],
+            accept_mode=dict_object["acceptMode"],
+            map_version=dict_object["mapVersion"],
+            average_sample_size_threshold=(
+                None
+                if "averageSampleSizeThreshold" not in dict_object
+                else dict_object["averageSampleSizeThreshold"]
+            ),
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -98,8 +105,8 @@ class TomtomRouteJob(TomtomJob):
         """
         job_dict = {
             **super().to_dict(),
-            'dateRanges': [d.to_dict() for d in self.date_ranges],
-            'routes': [r.to_dict() for r in self.routes]
+            "dateRanges": [d.to_dict() for d in self.date_ranges],
+            "routes": [r.to_dict() for r in self.routes],
         }
 
         return job_dict
