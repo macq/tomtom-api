@@ -422,7 +422,7 @@ class TomtomClient:
 
         job_id = job if isinstance(job, int) else job.job_id
 
-        url = f"https://{self.base_url}/traffic/trafficstats/reports/{job_id}/?key={self.key}"
+        url = f"https://{self.base_url}/traffic/trafficstats/reports/{job_id}?key={self.key}"
 
         response = self.request("delete", url)
 
